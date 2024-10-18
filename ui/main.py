@@ -15,5 +15,9 @@ CORS(app)
 def index():
     return render_template('index.html')
 
+@app.route('/circle')
+def index_circle():
+    return render_template('canvas/circle.html')
+
 if __name__ == "__main__":
     app.run(debug=True)

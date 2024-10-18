@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Canvas - 円 -</title>
+<style>
+    h1 {
+        margin: 20px 10px 20px 10px;
+    }
+
+    h3 {
+        margin-top: 20px;
+        padding: 0.4rem;
+        border-bottom: 1px solid #777777;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="mb-4">
+    <canvas id="canvas001" width="1200" height="1200">
+        canvas要素をサポートしていません。
+    </canvas>
+</div>
+
+<script>
+    class circle {
+        constructor(x, y, r) {
+            this.x = x;
+            this.y = y;
+            this.r = r;
+        }
+
+        draw(canvas) {
+            canvas.beginPath();//パスの作成
+            canvas.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);//正円のパス
+            canvas.stroke();
+        }
+
+        fill(canvas) {
+            canvas.beginPath();//パスの作成
+            canvas.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);//正円のパス
+            canvas.closePath();//パスを閉じる
+            canvas.fillStyle = 'red';
+            canvas.fill();//塗りつぶしの描画
+        }
+    }
+
+    class line {
+        static draw(canvas, from, to) {
+            canvas.beginPath();//パスの作成
+            canvas.moveTo(from.x, from.y);//開始点を指定
+            canvas.lineTo(to.x, to.y);//線を引く座標を入力
+            canvas.closePath();//パスを閉じる
+            canvas.stroke();//線の描画
+        }
+    }
+
+    class text {
+        static draw(canvas, x, y, strokeText) {
+            canvas.font = "12px serif";
+            canvas.strokeText(strokeText, x, y);
+        }
+    }
+
+    function draw(t, circles) {
+        const canvas001 = document.getElementById("canvas001");
+        if (canvas001.getContext) {
+            const context001 = canvas001.getContext("2d");//2次元描画
+
+            //円
+            const ax = parseInt(t / 50, 10) % 2 ? -1 : 1;
+            const c = new circle(circles[circles.length - 1].x + 20 * ax, (50 + t) + (Math.sin(1 * t) * 10) + (Math.sin(0.5 * t) * 10), 10 + 5 * Math.sin(0.5 * t));
+            c.draw(context001);
+            // text.draw(context001, c.x - 5, c.y - 15, t);
+            if(circles.length > 0) line.draw(context001, circles[circles.length - 1], c);
+            if(t % 5 == 0) c.fill(context001);
+            circles.push(c);
+        }
+
+        if(t > 200) return;
+        setTimeout(function(){
+            draw(t + 1, circles);
+        }, 100);
+    }
+
+    function draw2(x0, y0, circles, t, r) {
+        const canvas001 = document.getElementById("canvas001");
+        if (canvas001.getContext) {
+            const context001 = canvas001.getContext("2d");//2次元描画
+
+            //円
+            const count = 1 + (0.2 * t / (2 * Math.PI));
+            const c = new circle(x0 + r * Math.cos(0.2 * t), y0 + r * Math.sin(0.2 * t), 3 * count);
+            c.draw(context001);
+            // text.draw(context001, c.x - 5, c.y - 15, t);
+            if(circles.length > 0) line.draw(context001, circles[circles.length - 1], c);
+            if(t % 5 == 0) c.fill(context001);
+            circles.push(c);
+        }
+
+        if(t > 400) return;
+        setTimeout(function(){
+            draw2(x0, y0, circles, t + 1, r + 2);
+        }, 200);
+    }
+
+    function onload() {
+        // draw(1, [new circle(0, 0, 5)]);
+        
+        draw2(600, 350, [], 1, 1);
+    }
+    onload()
+</script>
+{% endblock %}
