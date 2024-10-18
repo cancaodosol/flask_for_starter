@@ -13,3 +13,9 @@ Flaskでまず簡単なWebアプリを作ってもらうのがよいのでは？
 - [] APIからのデータの取得
 - [] DBからのデータの取得
 - [] DBへのデータ登録・更新
+
+## 環境作成
+
+1. python install
+2. pip install
+3. python3 ui/main.py

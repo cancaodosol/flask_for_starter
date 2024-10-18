@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Canvas - 駅 -</title>
+<style>
+    h1 {
+        margin: 20px 10px 20px 10px;
+    }
+
+    h3 {
+        margin-top: 20px;
+        padding: 0.4rem;
+        border-bottom: 1px solid #777777;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="mb-4">
+    <canvas id="canvas001" width="1280" height="1000">
+        canvas要素をサポートしていません。
+    </canvas>
+</div>
+
+<script>
+    class circle {
+        constructor(x, y, r) {
+            this.x = x;
+            this.y = y;
+            this.r = r;
+        }
+
+        draw(canvas) {
+            canvas.beginPath();//パスの作成
+            canvas.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);//正円のパス
+            canvas.stroke();
+        }
+
+        fill(canvas) {
+            canvas.beginPath();//パスの作成
+            canvas.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);//正円のパス
+            canvas.closePath();//パスを閉じる
+            canvas.fillStyle = 'red';
+            canvas.fill();//塗りつぶしの描画
+        }
+    }
+
+    class line {
+        static draw(canvas, from, to) {
+            canvas.beginPath();//パスの作成
+            canvas.moveTo(from.x, from.y);//開始点を指定
+            canvas.lineTo(to.x, to.y);//線を引く座標を入力
+            canvas.closePath();//パスを閉じる
+            canvas.stroke();//線の描画
+        }
+
+        static drawc(canvas, from, to) {
+            canvas.beginPath();//パスの作成
+            canvas.moveTo(from.cx, from.cy);//開始点を指定
+            canvas.lineTo(to.cx, to.cy);//線を引く座標を入力
+            canvas.closePath();//パスを閉じる
+            canvas.stroke();//線の描画
+        }
+    }
+
+    class text {
+        static draw(canvas, x, y, strokeText) {
+            canvas.font = "12px serif";
+            canvas.strokeText(strokeText, x, y);
+        }
+    }
+
+    class station {
+        constructor() { }
+
+        loadData(data) {
+            this.name = data["stationName"];
+            this.nos = data["stationNo"].split(',');
+            this.x = data["coordsTopLeftX"] * 2.1;
+            this.y = data["coordsTopLeftY"] * 2.1;
+            this.width = data["coordsBottomRightX"] - data["coordsTopLeftX"];
+            this.height = data["coordsBottomRightY"] - data["coordsTopLeftY"];
+            this.cx = this.x + this.width / 2;
+            this.cy = this.y + this.height / 2;
+            return this;
+        }
+
+        getRouteNo(code) {
+            for(let i = 0; i < this.nos.length; i++) {
+                const no = this.nos[i];
+                if(no.charAt(0) == code){
+                    return no.replace(no.charAt(0), "");
+                }
+            }
+            return -1;
+        }
+
+        getRouteCodes() {
+            return this.nos.map((n) => n.charAt(0));
+        }
+
+        draw(canvas) {
+            if(this.getRouteCodes().includes("C")){
+                canvas.fillStyle = "green";
+                canvas.fillRect(this.x, this.y, this.width, this.height);
+                return;
+            }
+            if(this.getRouteCodes().includes("Y")){
+                canvas.fillStyle = "blue";
+                canvas.fillRect(this.x, this.y, this.width, this.height);
+                return;
+            }
+            if(this.getRouteCodes().includes("M")){
+                canvas.fillStyle = "red";
+                canvas.fillRect(this.x, this.y, this.width, this.height);
+                return;
+            }
+            canvas.strokeRect(this.x, this.y, this.width, this.height);
+        }
+
+        drawName(canvas) {
+            text.draw(canvas, this.x, this.y - 10, this.name);
+        }
+
+        drawRouteCode(canvas) {
+            text.draw(canvas, this.x, this.y + this.height + 15, this.nos);
+        }
+    }
+
+    async function getStations() {
+        const url = "/api/osakametro_station_coords";
+        const res = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json;charset=utf-8",
+                    "Accept": "application/json"
+                },
+            });
+        const retjson = await res.json();
+        return retjson;
+    };
+
+    async function draw() {
+        const canvas001 = document.getElementById("canvas001");
+        if (canvas001.getContext) {
+            const context001 = canvas001.getContext("2d");//2次元描画
+            const stations = await getStations();
+            const stationNames = [];
+            const stationsC = [];
+            const stationsY = [];
+            const stationsM = [];
+            for(let i = 0; i < stations["stationCoordsList"].length; i++){
+                const data = stations["stationCoordsList"][i];
+                const stat = (new station()).loadData(data);
+                stat.draw(context001);
+
+                if(stationNames.includes(stat.name)) continue;
+
+                stat.drawName(context001);
+                stat.drawRouteCode(context001);
+                stationNames.push(stat.name);
+                if(stat.getRouteCodes().includes("C")) {
+                    stationsC.push(stat);
+                }
+                if(stat.getRouteCodes().includes("Y")) {
+                    stationsY.push(stat);
+                }
+                if(stat.getRouteCodes().includes("M")) {
+                    stationsM.push(stat);
+                }
+            }
+
+            stationsC.sort((a, b) => a.getRouteNo("C") - b.getRouteNo("C"));
+            for(let i = 1; i < stationsC.length; i++){
+                line.drawc(context001, stationsC[i], stationsC[i-1]);
+            }
+            stationsY.sort((a, b) => a.getRouteNo("Y") - b.getRouteNo("Y"));
+            for(let i = 1; i < stationsY.length; i++){
+                line.drawc(context001, stationsY[i], stationsY[i-1]);
+            }
+            stationsM.sort((a, b) => a.getRouteNo("M") - b.getRouteNo("M"));
+            for(let i = 1; i < stationsM.length; i++){
+                line.drawc(context001, stationsM[i], stationsM[i-1]);
+            }
+        }
+    }
+
+    async function onload() {
+        draw();
+    }
+    onload()
+</script>
+{% endblock %}
